@@ -1,5 +1,6 @@
 package com.ridelink.account_service.controller;
 
+import com.ridelink.account_service.dto.UpdateProfileRequest;
 import com.ridelink.account_service.dto.LoginRequest;
 import com.ridelink.account_service.dto.LoginResponse;
 import com.ridelink.account_service.model.Account;
@@ -49,4 +50,21 @@ public class AccountController {
                         ResponseEntity.status(HttpStatus.NOT_FOUND)
                                 .body("Account not found"));
     }
+    @PutMapping("/me")
+public ResponseEntity<?> updateCurrentAccount(
+        Authentication authentication,
+        @RequestBody UpdateProfileRequest request) {
+
+    try {
+        Account updatedAccount = accountService.updateProfile(
+                authentication.getName(),
+                request
+        );
+
+        return ResponseEntity.ok(updatedAccount);
+
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+}
 }
