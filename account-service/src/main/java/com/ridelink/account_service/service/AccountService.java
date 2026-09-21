@@ -2,6 +2,7 @@ package com.ridelink.account_service.service;
 
 import com.ridelink.account_service.dto.LoginRequest;
 import com.ridelink.account_service.dto.LoginResponse;
+import com.ridelink.account_service.dto.UpdateProfileRequest;
 import com.ridelink.account_service.model.Account;
 import com.ridelink.account_service.repository.AccountRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,7 +17,9 @@ public class AccountService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AccountService(AccountRepository accountRepository,PasswordEncoder passwordEncoder,JwtService jwtService) {
+    public AccountService(AccountRepository accountRepository,
+                          PasswordEncoder passwordEncoder,
+                          JwtService jwtService) {
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -64,6 +67,26 @@ public class AccountService {
                 account.getEmail(),
                 account.getRole()
         );
+    }
+
+    public Account updateProfile(String email,
+                                 UpdateProfileRequest request) {
+
+        Account account = accountRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Account not found"));
+
+        if (request.getName() != null &&
+                !request.getName().isBlank()) {
+            account.setName(request.getName());
+        }
+
+        if (request.getPhone() != null &&
+                !request.getPhone().isBlank()) {
+            account.setPhone(request.getPhone());
+        }
+
+        return accountRepository.save(account);
     }
 
     public Optional<Account> getAccountById(String id) {
