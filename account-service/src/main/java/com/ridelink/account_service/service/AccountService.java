@@ -51,8 +51,8 @@ public class AccountService {
 
             String role = account.getRole().toUpperCase();
 
-            if (!role.equals("PASSENGER") &&
-                    !role.equals("DRIVER")) {
+            if (!role.equals("PASSENGER")
+                    && !role.equals("DRIVER")) {
 
                 throw new IllegalArgumentException(
                         "Registration role must be PASSENGER or DRIVER"
@@ -62,7 +62,7 @@ public class AccountService {
             account.setRole(role);
         }
 
-        // Default account status
+        // New accounts are active by default
         account.setStatus("ACTIVE");
 
         return accountRepository.save(account);
@@ -87,6 +87,7 @@ public class AccountService {
             );
         }
 
+        // Suspended/disabled accounts cannot login
         if (!"ACTIVE".equalsIgnoreCase(account.getStatus())) {
             throw new IllegalArgumentException(
                     "Account is not active"
@@ -114,14 +115,14 @@ public class AccountService {
                                 "Account not found"
                         ));
 
-        if (request.getName() != null &&
-                !request.getName().isBlank()) {
+        if (request.getName() != null
+                && !request.getName().isBlank()) {
 
             account.setName(request.getName());
         }
 
-        if (request.getPhone() != null &&
-                !request.getPhone().isBlank()) {
+        if (request.getPhone() != null
+                && !request.getPhone().isBlank()) {
 
             account.setPhone(request.getPhone());
         }
@@ -129,7 +130,7 @@ public class AccountService {
         return accountRepository.save(account);
     }
 
-    // ADMIN role management
+    // ADMIN - Update account role
     public Account updateRole(
             String accountId,
             String role) {
@@ -147,7 +148,9 @@ public class AccountService {
             );
         }
 
-        String normalizedRole = role.toUpperCase();
+        String normalizedRole = role
+                .trim()
+                .toUpperCase();
 
         if (!normalizedRole.equals("PASSENGER")
                 && !normalizedRole.equals("DRIVER")
@@ -159,6 +162,42 @@ public class AccountService {
         }
 
         account.setRole(normalizedRole);
+
+        return accountRepository.save(account);
+    }
+
+    // ADMIN - Update account status
+    public Account updateStatus(
+            String accountId,
+            String status) {
+
+        Account account = accountRepository
+                .findById(accountId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Account not found"
+                        ));
+
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Status is required"
+            );
+        }
+
+        String normalizedStatus = status
+                .trim()
+                .toUpperCase();
+
+        if (!normalizedStatus.equals("ACTIVE")
+                && !normalizedStatus.equals("SUSPENDED")
+                && !normalizedStatus.equals("DISABLED")) {
+
+            throw new IllegalArgumentException(
+                    "Invalid status. Allowed statuses: ACTIVE, SUSPENDED, DISABLED"
+            );
+        }
+
+        account.setStatus(normalizedStatus);
 
         return accountRepository.save(account);
     }

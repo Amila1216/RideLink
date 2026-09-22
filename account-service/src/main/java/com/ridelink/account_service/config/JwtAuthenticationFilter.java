@@ -1,10 +1,12 @@
 package com.ridelink.account_service.config;
 
 import com.ridelink.account_service.service.JwtService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,36 +32,57 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain)
             throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        String authHeader =
+                request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null
+                || !authHeader.startsWith("Bearer ")) {
+
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authHeader.substring(7);
 
-        if (jwtService.isTokenValid(token)
-                && SecurityContextHolder.getContext().getAuthentication() == null) {
+        try {
 
-            String email = jwtService.extractEmail(token);
-            String role = jwtService.extractRole(token);
+            if (jwtService.isTokenValid(token)) {
 
-            if (role != null) {
-                role = role.trim().toUpperCase();
+                String email =
+                        jwtService.extractEmail(token);
+
+                String role =
+                        jwtService.extractRole(token);
+
+                if (role != null) {
+                    role = role.trim().toUpperCase();
+                }
+
+                if (email != null
+                        && role != null
+                        && SecurityContextHolder
+                                .getContext()
+                                .getAuthentication() == null) {
+
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    email,
+                                    null,
+                                    List.of(
+                                            new SimpleGrantedAuthority(
+                                                    "ROLE_" + role
+                                            )
+                                    )
+                            );
+
+                    SecurityContextHolder
+                            .getContext()
+                            .setAuthentication(authentication);
+                }
             }
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            List.of(
-                                    new SimpleGrantedAuthority("ROLE_" + role)
-                            )
-                    );
-
-            SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
+        } catch (Exception e) {
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
