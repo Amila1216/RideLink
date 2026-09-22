@@ -1,5 +1,6 @@
 package com.ridelink.account_service.controller;
 
+import com.ridelink.account_service.dto.UpdateRoleRequest;
 import com.ridelink.account_service.dto.UpdateProfileRequest;
 import com.ridelink.account_service.dto.LoginRequest;
 import com.ridelink.account_service.dto.LoginResponse;
@@ -29,6 +30,21 @@ public class AccountController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+    @PatchMapping("/{id}/role")
+public ResponseEntity<?> updateRole(
+        @PathVariable String id,
+        @RequestBody UpdateRoleRequest request) {
+
+    try {
+        Account updatedAccount =
+                accountService.updateRole(id, request.getRole());
+
+        return ResponseEntity.ok(updatedAccount);
+
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+}
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
