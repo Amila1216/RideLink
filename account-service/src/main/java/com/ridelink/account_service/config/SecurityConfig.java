@@ -2,6 +2,7 @@ package com.ridelink.account_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -27,10 +28,17 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
                                 "/api/accounts/register",
                                 "/api/accounts/login"
                         ).permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/accounts/*/role"
+                        ).hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
 

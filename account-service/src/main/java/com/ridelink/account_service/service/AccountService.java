@@ -5,6 +5,7 @@ import com.ridelink.account_service.dto.LoginResponse;
 import com.ridelink.account_service.dto.UpdateProfileRequest;
 import com.ridelink.account_service.model.Account;
 import com.ridelink.account_service.repository.AccountRepository;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,44 +21,76 @@ public class AccountService {
     public AccountService(AccountRepository accountRepository,
                           PasswordEncoder passwordEncoder,
                           JwtService jwtService) {
+
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
     }
 
+    // Register new account
     public Account registerAccount(Account account) {
 
         if (accountRepository.existsByEmail(account.getEmail())) {
-            throw new IllegalArgumentException("Email is already registered");
+            throw new IllegalArgumentException(
+                    "Email is already registered"
+            );
         }
 
-        account.setPassword(passwordEncoder.encode(account.getPassword()));
+        // Hash password before saving
+        account.setPassword(
+                passwordEncoder.encode(account.getPassword())
+        );
 
-        if (account.getRole() == null || account.getRole().isBlank()) {
+        // Public registration can only create PASSENGER or DRIVER accounts
+        if (account.getRole() == null ||
+                account.getRole().isBlank()) {
+
             account.setRole("PASSENGER");
+
+        } else {
+
+            String role = account.getRole().toUpperCase();
+
+            if (!role.equals("PASSENGER") &&
+                    !role.equals("DRIVER")) {
+
+                throw new IllegalArgumentException(
+                        "Registration role must be PASSENGER or DRIVER"
+                );
+            }
+
+            account.setRole(role);
         }
 
-        if (account.getStatus() == null || account.getStatus().isBlank()) {
-            account.setStatus("ACTIVE");
-        }
+        // Default account status
+        account.setStatus("ACTIVE");
 
         return accountRepository.save(account);
     }
 
+    // Login
     public LoginResponse login(LoginRequest loginRequest) {
 
-        Account account = accountRepository.findByEmail(loginRequest.getEmail())
+        Account account = accountRepository
+                .findByEmail(loginRequest.getEmail())
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Invalid email or password"));
+                        new IllegalArgumentException(
+                                "Invalid email or password"
+                        ));
 
         if (!passwordEncoder.matches(
                 loginRequest.getPassword(),
                 account.getPassword())) {
-            throw new IllegalArgumentException("Invalid email or password");
+
+            throw new IllegalArgumentException(
+                    "Invalid email or password"
+            );
         }
 
         if (!"ACTIVE".equalsIgnoreCase(account.getStatus())) {
-            throw new IllegalArgumentException("Account is not active");
+            throw new IllegalArgumentException(
+                    "Account is not active"
+            );
         }
 
         String token = jwtService.generateToken(account);
@@ -69,22 +102,63 @@ public class AccountService {
         );
     }
 
-    public Account updateProfile(String email,
-                                 UpdateProfileRequest request) {
+    // Update logged-in user's profile
+    public Account updateProfile(
+            String email,
+            UpdateProfileRequest request) {
 
-        Account account = accountRepository.findByEmail(email)
+        Account account = accountRepository
+                .findByEmail(email)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Account not found"));
+                        new IllegalArgumentException(
+                                "Account not found"
+                        ));
 
         if (request.getName() != null &&
                 !request.getName().isBlank()) {
+
             account.setName(request.getName());
         }
 
         if (request.getPhone() != null &&
                 !request.getPhone().isBlank()) {
+
             account.setPhone(request.getPhone());
         }
+
+        return accountRepository.save(account);
+    }
+
+    // ADMIN role management
+    public Account updateRole(
+            String accountId,
+            String role) {
+
+        Account account = accountRepository
+                .findById(accountId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Account not found"
+                        ));
+
+        if (role == null || role.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Role is required"
+            );
+        }
+
+        String normalizedRole = role.toUpperCase();
+
+        if (!normalizedRole.equals("PASSENGER")
+                && !normalizedRole.equals("DRIVER")
+                && !normalizedRole.equals("ADMIN")) {
+
+            throw new IllegalArgumentException(
+                    "Invalid role. Allowed roles: PASSENGER, DRIVER, ADMIN"
+            );
+        }
+
+        account.setRole(normalizedRole);
 
         return accountRepository.save(account);
     }
