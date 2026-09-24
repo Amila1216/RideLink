@@ -1,5 +1,4 @@
 com\ridelink\ride_service\model\Ride.class
 com\ridelink\ride_service\service\RideService.class
-com\ridelink\ride_service\controller\RideController.class
 com\ridelink\ride_service\RideServiceApplication.class
 com\ridelink\ride_service\repository\RideRepository.class
