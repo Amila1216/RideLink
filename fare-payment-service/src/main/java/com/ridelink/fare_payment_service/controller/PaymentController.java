@@ -1,6 +1,7 @@
 package com.ridelink.fare_payment_service.controller;
 
 import com.ridelink.fare_payment_service.dto.PaymentRequest;
+import com.ridelink.fare_payment_service.dto.PaymentStatusResponse;
 import com.ridelink.fare_payment_service.model.Payment;
 import com.ridelink.fare_payment_service.service.PaymentService;
 import jakarta.validation.Valid;
@@ -24,5 +25,15 @@ public class PaymentController {
         Payment payment = paymentService.processPayment(request);
 
         return ResponseEntity.ok(payment);
+    }
+
+    @GetMapping("/ride/{rideId}/status")
+    public ResponseEntity<PaymentStatusResponse> getPaymentStatus(
+            @PathVariable String rideId) {
+
+        PaymentStatusResponse status =
+                paymentService.getPaymentStatus(rideId);
+
+        return ResponseEntity.ok(status);
     }
 }

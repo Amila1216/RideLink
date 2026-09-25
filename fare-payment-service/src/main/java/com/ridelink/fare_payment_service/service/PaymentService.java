@@ -3,6 +3,9 @@ package com.ridelink.fare_payment_service.service;
 import com.ridelink.fare_payment_service.dto.PaymentRequest;
 import com.ridelink.fare_payment_service.model.Payment;
 import com.ridelink.fare_payment_service.repository.PaymentRepository;
+import com.ridelink.fare_payment_service.dto.PaymentStatusResponse;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -35,5 +38,21 @@ public class PaymentService {
         );
 
         return paymentRepository.save(payment);
+    }
+    
+    public PaymentStatusResponse getPaymentStatus(String rideId) {
+
+        Payment payment = paymentRepository.findByRideId(rideId)
+        .orElseThrow(() ->
+                new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Payment not found for ride ID: " + rideId
+                ));
+
+        return new PaymentStatusResponse(
+            payment.getRideId(),
+            payment.getPaymentStatus(),
+            payment.getTransactionId()
+        );
     }
 }
