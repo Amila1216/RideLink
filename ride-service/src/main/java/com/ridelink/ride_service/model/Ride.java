@@ -2,6 +2,7 @@ package com.ridelink.ride_service.model;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import jakarta.validation.constraints.NotBlank;
 
 @Document(collection = "rides")
 public class Ride {
@@ -9,18 +10,23 @@ public class Ride {
     @Id
     private String id;
 
+    @NotBlank(message = "Passenger ID is required")
     private String passengerId;
+
     private String driverId;
+
+    @NotBlank(message = "Pickup location is required")
     private String pickupLocation;
+
+    @NotBlank(message = "Dropoff location is required")
     private String dropoffLocation;
+
     private String status;
 
     public Ride() {
     }
 
-    public Ride(String passengerId, String driverId,
-                String pickupLocation, String dropoffLocation,
-                String status) {
+    public Ride(String passengerId, String driverId, String pickupLocation, String dropoffLocation, String status) {
         this.passengerId = passengerId;
         this.driverId = driverId;
         this.pickupLocation = pickupLocation;
