@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rides")
@@ -21,9 +22,6 @@ public class RideController {
 
     @PostMapping
     public ResponseEntity<Ride> createRide(@Valid @RequestBody Ride ride) {
-        if (ride.getStatus() == null || ride.getStatus().isBlank()) {
-            ride.setStatus("REQUESTED");
-        }
         Ride createdRide = rideService.createRide(ride);
         return new ResponseEntity<>(createdRide, HttpStatus.CREATED);
     }
@@ -50,8 +48,27 @@ public class RideController {
         return ResponseEntity.ok(rideService.getRidesByDriver(driverId));
     }
 
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
+        String status = payload.get("status");
+        String driverId = payload.get("driverId");
+
+        if (status == null || status.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Status field is required"));
+        }
+
+        try {
+            Ride updatedRide = rideService.updateRideStatus(id, status, driverId);
+            return ResponseEntity.ok(updatedRide);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Ride> updateRide(@PathVariable String id, @RequestBody Ride ride) {
+    public ResponseEntity<Ride> updateRide(@PathVariable String id, @Valid @RequestBody Ride ride) {
         Ride updatedRide = rideService.updateRide(id, ride);
         if (updatedRide != null) {
             return ResponseEntity.ok(updatedRide);
