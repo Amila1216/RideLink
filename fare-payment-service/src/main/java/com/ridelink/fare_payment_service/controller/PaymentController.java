@@ -4,6 +4,7 @@ import com.ridelink.fare_payment_service.dto.PaymentRequest;
 import com.ridelink.fare_payment_service.dto.PaymentStatusResponse;
 import com.ridelink.fare_payment_service.model.Payment;
 import com.ridelink.fare_payment_service.service.PaymentService;
+import com.ridelink.fare_payment_service.dto.ReceiptResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,5 +36,15 @@ public class PaymentController {
                 paymentService.getPaymentStatus(rideId);
 
         return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/ride/{rideId}/receipt")
+    public ResponseEntity<ReceiptResponse> getReceipt(
+            @PathVariable String rideId) {
+
+        ReceiptResponse receipt =
+                paymentService.getReceipt(rideId);
+
+        return ResponseEntity.ok(receipt);
     }
 }
