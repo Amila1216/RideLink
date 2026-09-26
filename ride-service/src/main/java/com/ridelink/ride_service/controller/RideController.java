@@ -78,6 +78,9 @@ public class RideController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRide(@PathVariable String id) {
+        if (rideService.getRideById(id).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
         rideService.deleteRide(id);
         return ResponseEntity.noContent().build();
     }
