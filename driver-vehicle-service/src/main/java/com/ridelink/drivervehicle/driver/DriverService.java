@@ -39,6 +39,21 @@ public class DriverService {
     }
 
     @Transactional
+    public DriverAvailabilityResponse updateAvailability(Long driverId, DriverAvailabilityRequest request) {
+        Driver driver = findDriver(driverId);
+        if (!"AVAILABLE".equals(request.status()) && !"UNAVAILABLE".equals(request.status())) {
+            throw new IllegalArgumentException("Availability status must be AVAILABLE or UNAVAILABLE");
+        }
+        driver.setDriverAvailability(DriverAvailability.valueOf(request.status()));
+        return DriverAvailabilityResponse.from(driverRepository.save(driver));
+    }
+
+    @Transactional(readOnly = true)
+    public DriverAvailabilityResponse getAvailability(Long driverId) {
+        return DriverAvailabilityResponse.from(findDriver(driverId));
+    }
+
+    @Transactional
     public DriverResponse updateDriver(Long driverId, DriverRequest request) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));

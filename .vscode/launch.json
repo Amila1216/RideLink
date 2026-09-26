@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-RideLinkDriverVehicleServiceApplication<driver-vehicle-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.ridelink.drivervehicle.RideLinkDriverVehicleServiceApplication",
+            "projectName": "driver-vehicle-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

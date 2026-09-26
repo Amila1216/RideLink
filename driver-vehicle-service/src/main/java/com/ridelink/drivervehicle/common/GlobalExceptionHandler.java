@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,6 +46,12 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.BAD_REQUEST,
                 "Invalid parameter: " + ex.getName(),
                 request.getRequestURI());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableRequest(HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
+        return buildError(HttpStatus.BAD_REQUEST, "Invalid or missing request body", request.getRequestURI());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
