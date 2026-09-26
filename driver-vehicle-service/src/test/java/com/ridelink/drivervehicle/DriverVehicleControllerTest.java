@@ -29,6 +29,21 @@ class DriverVehicleControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    void rootEndpoint_shouldReturnServiceInfo() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.serviceName").value("RideLink Driver & Vehicle Service"))
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void missingEndpoint_shouldReturnNotFound() throws Exception {
+        mockMvc.perform(get("/does-not-exist"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
     void createDriver_shouldReturnCreated_whenValid() throws Exception {
         Map<String, Object> request = Map.of(
                 "firstName", "Alice",
