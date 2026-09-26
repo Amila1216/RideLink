@@ -29,6 +29,21 @@ class DriverVehicleControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
+    void rootEndpoint_shouldReturnServiceInfo() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.serviceName").value("RideLink Driver & Vehicle Service"))
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void missingEndpoint_shouldReturnNotFound() throws Exception {
+        mockMvc.perform(get("/does-not-exist"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
     void createDriver_shouldReturnCreated_whenValid() throws Exception {
         Map<String, Object> request = Map.of(
                 "firstName", "Alice",
@@ -251,6 +266,64 @@ class DriverVehicleControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.latitude").value(6.9271))
                 .andExpect(jsonPath("$.longitude").value(79.8612));
+    }
+
+    @Test
+    void availability_shouldUpdateAndRetrieve_whenValid() throws Exception {
+        Long driverId = createDriver("Maya", "Perera", "maya.perera@example.com", "DL-9013");
+
+        mockMvc.perform(put("/api/v1/drivers/{driverId}/availability", driverId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "AVAILABLE"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.driverId").value(driverId))
+                .andExpect(jsonPath("$.status").value("AVAILABLE"));
+
+        mockMvc.perform(put("/api/v1/drivers/{driverId}/availability", driverId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "UNAVAILABLE"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UNAVAILABLE"));
+
+        mockMvc.perform(get("/api/v1/drivers/{driverId}/availability", driverId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UNAVAILABLE"));
+    }
+
+    @Test
+    void updateAvailability_shouldReturnBadRequest_whenStatusIsUnsupportedOrMissing() throws Exception {
+        Long driverId = createDriver("Noah", "Silva", "noah.silva@example.com", "DL-9014");
+
+        mockMvc.perform(put("/api/v1/drivers/{driverId}/availability", driverId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "BUSY"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        mockMvc.perform(put("/api/v1/drivers/{driverId}/availability", driverId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        mockMvc.perform(put("/api/v1/drivers/{driverId}/availability", driverId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Invalid or missing request body"));
+    }
+
+    @Test
+    void availability_shouldReturnBadRequestForInvalidDriverId() throws Exception {
+        mockMvc.perform(get("/api/v1/drivers/{driverId}/availability", "not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    void availability_shouldReturnNotFound_whenDriverDoesNotExist() throws Exception {
+        mockMvc.perform(get("/api/v1/drivers/{driverId}/availability", 999999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test

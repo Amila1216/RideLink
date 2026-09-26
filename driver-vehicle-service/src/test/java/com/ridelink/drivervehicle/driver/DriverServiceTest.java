@@ -72,6 +72,62 @@ class DriverServiceTest {
     }
 
     @Test
+    void updateAvailability_shouldSetAvailable() {
+        Driver driver = driver(1L);
+        driver.setDriverAvailability(DriverAvailability.UNAVAILABLE);
+        when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+        when(driverRepository.save(driver)).thenReturn(driver);
+
+        DriverAvailabilityResponse response = new DriverService(driverRepository)
+                .updateAvailability(1L, new DriverAvailabilityRequest("AVAILABLE"));
+
+        assertEquals(DriverAvailability.AVAILABLE, response.status());
+        verify(driverRepository).save(driver);
+    }
+
+    @Test
+    void updateAvailability_shouldSetUnavailable() {
+        Driver driver = driver(1L);
+        when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+        when(driverRepository.save(driver)).thenReturn(driver);
+
+        DriverAvailabilityResponse response = new DriverService(driverRepository)
+                .updateAvailability(1L, new DriverAvailabilityRequest("UNAVAILABLE"));
+
+        assertEquals(DriverAvailability.UNAVAILABLE, response.status());
+        verify(driverRepository).save(driver);
+    }
+
+    @Test
+    void getAvailability_shouldReturnStoredStatus() {
+        Driver driver = driver(1L);
+        driver.setDriverAvailability(DriverAvailability.UNAVAILABLE);
+        when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+
+        DriverAvailabilityResponse response = new DriverService(driverRepository).getAvailability(1L);
+
+        assertEquals(DriverAvailability.UNAVAILABLE, response.status());
+    }
+
+    @Test
+    void updateAvailability_shouldRejectUnsupportedStatus() {
+        Driver driver = driver(1L);
+        when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new DriverService(driverRepository)
+                        .updateAvailability(1L, new DriverAvailabilityRequest("BUSY")));
+    }
+
+    @Test
+    void getAvailability_shouldThrowWhenDriverDoesNotExist() {
+        when(driverRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> new DriverService(driverRepository).getAvailability(99L));
+    }
+
+    @Test
     void getServiceArea_shouldThrowWhenDriverDoesNotExist() {
         when(driverRepository.findById(99L)).thenReturn(Optional.empty());
 
