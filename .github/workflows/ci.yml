@@ -25,11 +25,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - account-service
-          - driver-vehicle-service
-          - ride-service
-          - fare-payment-service
+        include:
+          - service: account-service
+            java: '17'
+
+          - service: driver-vehicle-service
+            java: '21'
+
+          - service: ride-service
+            java: '17'
+
+          - service: fare-payment-service
+            java: '17'
 
     services:
       mongodb:
@@ -41,11 +48,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: ${{ matrix.java }}
           cache: maven
           cache-dependency-path: ${{ matrix.service }}/pom.xml
 
