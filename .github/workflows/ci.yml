@@ -62,5 +62,5 @@ jobs:
       - name: Build and run tests
         env:
           MONGODB_URI: mongodb://127.0.0.1:27017/ridelink_ci
-          SPRING_MONGODB_URI: mongodb://127.0.0.1:27017/ridelink_ci
+          SPRING_DATA_MONGODB_URI: mongodb://127.0.0.1:27017/ridelink_ci
         run: mvn -B -f "${{ matrix.service }}/pom.xml" clean verify
