@@ -1,5 +1,6 @@
 package com.ridelink.ride_service.model;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -9,18 +10,29 @@ public class Ride {
     @Id
     private String id;
 
+    @NotBlank(message = "Passenger ID is required")
     private String passengerId;
+
     private String driverId;
+
+    @NotBlank(message = "Pickup location is required")
     private String pickupLocation;
+
+    @NotBlank(message = "Dropoff location is required")
     private String dropoffLocation;
-    private String status;
+
+    private RideStatus status = RideStatus.REQUESTED;
 
     public Ride() {
     }
 
-    public Ride(String passengerId, String driverId,
-                String pickupLocation, String dropoffLocation,
-                String status) {
+    public Ride(
+            String passengerId,
+            String driverId,
+            String pickupLocation,
+            String dropoffLocation,
+            RideStatus status) {
+
         this.passengerId = passengerId;
         this.driverId = driverId;
         this.pickupLocation = pickupLocation;
@@ -68,11 +80,11 @@ public class Ride {
         this.dropoffLocation = dropoffLocation;
     }
 
-    public String getStatus() {
+    public RideStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(RideStatus status) {
         this.status = status;
     }
 }

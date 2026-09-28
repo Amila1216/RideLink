@@ -2,6 +2,7 @@ package com.ridelink.ride_service.controller;
 
 import com.ridelink.ride_service.model.Ride;
 import com.ridelink.ride_service.service.RideService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,22 +19,23 @@ public class RideController {
     }
 
     @PostMapping
-    public ResponseEntity<Ride> createRide(@RequestBody Ride ride) {
+    public ResponseEntity<Ride> createRide(
+            @Valid @RequestBody Ride ride) {
 
-        if (ride.getStatus() == null || ride.getStatus().isBlank()) {
-            ride.setStatus("REQUESTED");
-        }
-
-        return ResponseEntity.ok(rideService.createRide(ride));
+        return ResponseEntity.status(201)
+                .body(rideService.createRide(ride));
     }
 
     @GetMapping
     public ResponseEntity<List<Ride>> getAllRides() {
-        return ResponseEntity.ok(rideService.getAllRides());
+        return ResponseEntity.ok(
+                rideService.getAllRides()
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Ride> getRideById(@PathVariable String id) {
+    public ResponseEntity<Ride> getRideById(
+            @PathVariable String id) {
 
         return rideService.getRideById(id)
                 .map(ResponseEntity::ok)
@@ -61,19 +63,52 @@ public class RideController {
     @PutMapping("/{id}")
     public ResponseEntity<Ride> updateRide(
             @PathVariable String id,
-            @RequestBody Ride ride) {
+            @Valid @RequestBody Ride ride) {
 
         Ride updatedRide = rideService.updateRide(id, ride);
-
-        if (updatedRide == null) {
-            return ResponseEntity.notFound().build();
-        }
 
         return ResponseEntity.ok(updatedRide);
     }
 
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<Ride> acceptRide(
+            @PathVariable String id) {
+
+        return ResponseEntity.ok(
+                rideService.acceptRide(id)
+        );
+    }
+
+    @PostMapping("/{id}/start")
+    public ResponseEntity<Ride> startRide(
+            @PathVariable String id) {
+
+        return ResponseEntity.ok(
+                rideService.startRide(id)
+        );
+    }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<Ride> completeRide(
+            @PathVariable String id) {
+
+        return ResponseEntity.ok(
+                rideService.completeRide(id)
+        );
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Ride> cancelRide(
+            @PathVariable String id) {
+
+        return ResponseEntity.ok(
+                rideService.cancelRide(id)
+        );
+    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRide(@PathVariable String id) {
+    public ResponseEntity<Void> deleteRide(
+            @PathVariable String id) {
 
         if (rideService.getRideById(id).isEmpty()) {
             return ResponseEntity.notFound().build();
