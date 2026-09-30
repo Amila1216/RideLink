@@ -29,17 +29,9 @@ public class RideController {
 
         Ride ride = new Ride();
 
-        ride.setPassengerId(
-                authenticatedUser.accountId()
-        );
-
-        ride.setPickupLocation(
-                request.pickupLocation()
-        );
-
-        ride.setDropoffLocation(
-                request.dropoffLocation()
-        );
+        ride.setPassengerId(authenticatedUser.accountId());
+        ride.setPickupLocation(request.pickupLocation());
+        ride.setDropoffLocation(request.dropoffLocation());
 
         return ResponseEntity
                 .status(201)
@@ -48,7 +40,6 @@ public class RideController {
 
     @GetMapping
     public ResponseEntity<List<Ride>> getAllRides() {
-
         return ResponseEntity.ok(
                 rideService.getAllRides()
         );
@@ -105,21 +96,15 @@ public class RideController {
 
         Ride ride = new Ride();
 
-        ride.setPickupLocation(
-                request.pickupLocation()
-        );
+        ride.setPickupLocation(request.pickupLocation());
+        ride.setDropoffLocation(request.dropoffLocation());
 
-        ride.setDropoffLocation(
-                request.dropoffLocation()
+        Ride updatedRide = rideService.updateRide(
+                id,
+                ride,
+                authenticatedUser.accountId(),
+                authenticatedUser.role()
         );
-
-        Ride updatedRide =
-                rideService.updateRide(
-                        id,
-                        ride,
-                        authenticatedUser.accountId(),
-                        authenticatedUser.role()
-                );
 
         return ResponseEntity.ok(updatedRide);
     }
@@ -193,11 +178,8 @@ public class RideController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRide(
-            @PathVariable String id) {
-
+    public ResponseEntity<Void> deleteRide(@PathVariable String id) {
         rideService.deleteRide(id);
-
         return ResponseEntity.noContent().build();
     }
 }

@@ -27,7 +27,6 @@ public class RideService {
     }
 
     public Ride createRide(Ride ride) {
-
         ride.setId(null);
         ride.setDriverId(null);
         ride.setStatus(RideStatus.REQUESTED);
@@ -52,22 +51,12 @@ public class RideService {
         }
 
         if ("PASSENGER".equalsIgnoreCase(role)) {
-
-            validatePassengerOwnership(
-                    ride,
-                    accountId
-            );
-
+            validatePassengerOwnership(ride, accountId);
             return ride;
         }
 
         if ("DRIVER".equalsIgnoreCase(role)) {
-
-            validateDriverOwnership(
-                    ride,
-                    email
-            );
-
+            validateDriverOwnership(ride, email);
             return ride;
         }
 
@@ -82,7 +71,6 @@ public class RideService {
             String role) {
 
         if (!"ADMIN".equalsIgnoreCase(role)) {
-
             if (!"PASSENGER".equalsIgnoreCase(role)
                     || accountId == null
                     || !accountId.equals(passengerId)) {
@@ -93,9 +81,7 @@ public class RideService {
             }
         }
 
-        return rideRepository.findByPassengerId(
-                passengerId
-        );
+        return rideRepository.findByPassengerId(passengerId);
     }
 
     public List<Ride> getRidesByDriverForUser(
@@ -104,23 +90,16 @@ public class RideService {
             String role) {
 
         if (!"ADMIN".equalsIgnoreCase(role)) {
-
             if (!"DRIVER".equalsIgnoreCase(role)) {
-
                 throw new RideAccessDeniedException(
                         "You do not have permission to access these rides"
                 );
             }
 
-            validateDriverIdentity(
-                    driverId,
-                    email
-            );
+            validateDriverIdentity(driverId, email);
         }
 
-        return rideRepository.findByDriverId(
-                driverId
-        );
+        return rideRepository.findByDriverId(driverId);
     }
 
     public Ride updateRide(
@@ -132,27 +111,17 @@ public class RideService {
         Ride ride = getRequiredRide(id);
 
         if (!"ADMIN".equalsIgnoreCase(role)) {
-
-            validatePassengerOwnership(
-                    ride,
-                    accountId
-            );
+            validatePassengerOwnership(ride, accountId);
         }
 
         if (ride.getStatus() != RideStatus.REQUESTED) {
-
             throw new IllegalStateException(
                     "Ride details can only be updated while status is REQUESTED"
             );
         }
 
-        ride.setPickupLocation(
-                updatedRide.getPickupLocation()
-        );
-
-        ride.setDropoffLocation(
-                updatedRide.getDropoffLocation()
-        );
+        ride.setPickupLocation(updatedRide.getPickupLocation());
+        ride.setDropoffLocation(updatedRide.getDropoffLocation());
 
         return rideRepository.save(ride);
     }
@@ -165,11 +134,7 @@ public class RideService {
         Ride ride = getRequiredRide(id);
 
         if (!"ADMIN".equalsIgnoreCase(role)) {
-
-            validatePassengerOwnership(
-                    ride,
-                    accountId
-            );
+            validatePassengerOwnership(ride, accountId);
         }
 
         validateTransition(
@@ -182,9 +147,7 @@ public class RideService {
 
         AvailableDriverResponse selectedDriver =
                 availableDrivers.stream()
-                        .filter(driver ->
-                                driver.driverId() != null
-                        )
+                        .filter(driver -> driver.driverId() != null)
                         .filter(driver ->
                                 "AVAILABLE".equalsIgnoreCase(
                                         driver.driverAvailability()
@@ -198,14 +161,10 @@ public class RideService {
                         );
 
         ride.setDriverId(
-                String.valueOf(
-                        selectedDriver.driverId()
-                )
+                String.valueOf(selectedDriver.driverId())
         );
 
-        ride.setStatus(
-                RideStatus.ASSIGNED
-        );
+        ride.setStatus(RideStatus.ASSIGNED);
 
         return rideRepository.save(ride);
     }
@@ -276,25 +235,21 @@ public class RideService {
         Ride ride = getRequiredRide(id);
 
         if ("ADMIN".equalsIgnoreCase(role)) {
-
             // Admin may cancel without ownership restriction.
 
         } else if ("PASSENGER".equalsIgnoreCase(role)) {
-
             validatePassengerOwnership(
                     ride,
                     accountId
             );
 
         } else if ("DRIVER".equalsIgnoreCase(role)) {
-
             validateDriverOwnership(
                     ride,
                     email
             );
 
         } else {
-
             throw new RideAccessDeniedException(
                     "You do not have permission to cancel this ride"
             );
@@ -354,13 +309,10 @@ public class RideService {
         }
 
         DriverDetailsResponse driver =
-                driverServiceClient.getDriverById(
-                        driverId
-                );
+                driverServiceClient.getDriverById(driverId);
 
         if (driver.email() == null
-                || !driver.email()
-                .equalsIgnoreCase(driverEmail)) {
+                || !driver.email().equalsIgnoreCase(driverEmail)) {
 
             throw new RideAccessDeniedException(
                     "You are not the assigned driver for this ride"
@@ -385,7 +337,6 @@ public class RideService {
             RideStatus newStatus) {
 
         if (currentStatus == null) {
-
             throw new IllegalStateException(
                     "Current ride status is missing"
             );
@@ -393,7 +344,6 @@ public class RideService {
 
         boolean validTransition =
                 switch (currentStatus) {
-
                     case REQUESTED ->
                             newStatus == RideStatus.ASSIGNED
                                     || newStatus == RideStatus.CANCELLED;
@@ -414,7 +364,6 @@ public class RideService {
                 };
 
         if (!validTransition) {
-
             throw new IllegalStateException(
                     "Invalid ride status transition: "
                             + currentStatus
@@ -425,7 +374,6 @@ public class RideService {
     }
 
     private Ride getRequiredRide(String id) {
-
         return rideRepository.findById(id)
                 .orElseThrow(() ->
                         new IllegalArgumentException(
@@ -435,9 +383,7 @@ public class RideService {
     }
 
     public void deleteRide(String id) {
-
         getRequiredRide(id);
-
         rideRepository.deleteById(id);
     }
 }

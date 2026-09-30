@@ -19,7 +19,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
-@Tag(name = "Driver & Vehicle Service", description = "Driver, vehicle, service-area, and simulated-location operations")
+@Tag(name = "Driver & Vehicle Service", description = "Driver, vehicle, availability, service-area, and simulated-location operations")
 public class DriverController {
 
     private final DriverService driverService;
@@ -61,6 +61,33 @@ public class DriverController {
             @Parameter(description = "Driver ID") @PathVariable Long driverId,
             @Valid @RequestBody DriverRequest request) {
         return ResponseEntity.ok(driverService.updateDriver(driverId, request));
+    }
+
+    @Operation(summary = "Set a driver's availability",
+            description = "Accepts AVAILABLE or UNAVAILABLE. This service does not currently configure authentication or role-based authorization.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Driver availability updated"),
+            @ApiResponse(responseCode = "400", description = "Invalid request, driver ID, or availability status"),
+            @ApiResponse(responseCode = "404", description = "Driver not found")
+    })
+    @PutMapping("/drivers/{driverId}/availability")
+    public ResponseEntity<DriverAvailabilityResponse> updateAvailability(
+            @Parameter(description = "Driver ID") @PathVariable Long driverId,
+            @Valid @RequestBody DriverAvailabilityRequest request) {
+        return ResponseEntity.ok(driverService.updateAvailability(driverId, request));
+    }
+
+    @Operation(summary = "Get a driver's current availability",
+            description = "This service does not currently configure authentication or role-based authorization.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Driver availability found"),
+            @ApiResponse(responseCode = "400", description = "Invalid driver ID"),
+            @ApiResponse(responseCode = "404", description = "Driver not found")
+    })
+    @GetMapping("/drivers/{driverId}/availability")
+    public ResponseEntity<DriverAvailabilityResponse> getAvailability(
+            @Parameter(description = "Driver ID") @PathVariable Long driverId) {
+        return ResponseEntity.ok(driverService.getAvailability(driverId));
     }
 
     @Operation(summary = "Set or update a driver's service area")
