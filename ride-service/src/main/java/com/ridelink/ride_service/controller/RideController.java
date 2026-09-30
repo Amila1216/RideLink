@@ -1,9 +1,13 @@
 package com.ridelink.ride_service.controller;
 
+import com.ridelink.ride_service.dto.CreateRideRequest;
+import com.ridelink.ride_service.dto.UpdateRideRequest;
 import com.ridelink.ride_service.model.Ride;
+import com.ridelink.ride_service.security.AuthenticatedUser;
 import com.ridelink.ride_service.service.RideService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,14 +24,31 @@ public class RideController {
 
     @PostMapping
     public ResponseEntity<Ride> createRide(
-            @Valid @RequestBody Ride ride) {
+            @Valid @RequestBody CreateRideRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
-        return ResponseEntity.status(201)
+        Ride ride = new Ride();
+
+        ride.setPassengerId(
+                authenticatedUser.accountId()
+        );
+
+        ride.setPickupLocation(
+                request.pickupLocation()
+        );
+
+        ride.setDropoffLocation(
+                request.dropoffLocation()
+        );
+
+        return ResponseEntity
+                .status(201)
                 .body(rideService.createRide(ride));
     }
 
     @GetMapping
     public ResponseEntity<List<Ride>> getAllRides() {
+
         return ResponseEntity.ok(
                 rideService.getAllRides()
         );
@@ -35,84 +56,145 @@ public class RideController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Ride> getRideById(
-            @PathVariable String id) {
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
-        return rideService.getRideById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(
+                rideService.getRideByIdForUser(
+                        id,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.email(),
+                        authenticatedUser.role()
+                )
+        );
     }
 
     @GetMapping("/passenger/{passengerId}")
     public ResponseEntity<List<Ride>> getRidesByPassenger(
-            @PathVariable String passengerId) {
+            @PathVariable String passengerId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
         return ResponseEntity.ok(
-                rideService.getRidesByPassenger(passengerId)
+                rideService.getRidesByPassengerForUser(
+                        passengerId,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.role()
+                )
         );
     }
 
     @GetMapping("/driver/{driverId}")
     public ResponseEntity<List<Ride>> getRidesByDriver(
-            @PathVariable String driverId) {
+            @PathVariable String driverId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
         return ResponseEntity.ok(
-                rideService.getRidesByDriver(driverId)
+                rideService.getRidesByDriverForUser(
+                        driverId,
+                        authenticatedUser.email(),
+                        authenticatedUser.role()
+                )
         );
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Ride> updateRide(
             @PathVariable String id,
-            @Valid @RequestBody Ride ride) {
+            @Valid @RequestBody UpdateRideRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
-        Ride updatedRide = rideService.updateRide(id, ride);
+        Ride ride = new Ride();
+
+        ride.setPickupLocation(
+                request.pickupLocation()
+        );
+
+        ride.setDropoffLocation(
+                request.dropoffLocation()
+        );
+
+        Ride updatedRide =
+                rideService.updateRide(
+                        id,
+                        ride,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.role()
+                );
 
         return ResponseEntity.ok(updatedRide);
     }
 
-    @PostMapping("/{id}/accept")
-    public ResponseEntity<Ride> acceptRide(
-            @PathVariable String id) {
+    @PostMapping("/{id}/assign-driver")
+    public ResponseEntity<Ride> assignDriver(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
         return ResponseEntity.ok(
-                rideService.acceptRide(id)
+                rideService.assignAvailableDriver(
+                        id,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.role()
+                )
+        );
+    }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<Ride> acceptRide(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.acceptRide(
+                        id,
+                        authenticatedUser.email()
+                )
         );
     }
 
     @PostMapping("/{id}/start")
     public ResponseEntity<Ride> startRide(
-            @PathVariable String id) {
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
         return ResponseEntity.ok(
-                rideService.startRide(id)
+                rideService.startRide(
+                        id,
+                        authenticatedUser.email()
+                )
         );
     }
 
     @PostMapping("/{id}/complete")
     public ResponseEntity<Ride> completeRide(
-            @PathVariable String id) {
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
         return ResponseEntity.ok(
-                rideService.completeRide(id)
+                rideService.completeRide(
+                        id,
+                        authenticatedUser.email()
+                )
         );
     }
 
     @PostMapping("/{id}/cancel")
     public ResponseEntity<Ride> cancelRide(
-            @PathVariable String id) {
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
         return ResponseEntity.ok(
-                rideService.cancelRide(id)
+                rideService.cancelRide(
+                        id,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.email(),
+                        authenticatedUser.role()
+                )
         );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRide(
             @PathVariable String id) {
-
-        if (rideService.getRideById(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
 
         rideService.deleteRide(id);
 

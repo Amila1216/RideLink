@@ -13,6 +13,36 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(RideAccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleRideAccessDenied(
+            RideAccessDeniedException exception) {
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(DriverServiceUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleDriverServiceUnavailable(
+            DriverServiceUnavailableException exception) {
+
+        return buildResponse(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(NoAvailableDriverException.class)
+    public ResponseEntity<Map<String, Object>> handleNoAvailableDriver(
+            NoAvailableDriverException exception) {
+
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                exception.getMessage()
+        );
+    }
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalState(
             IllegalStateException exception) {

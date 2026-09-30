@@ -1,5 +1,6 @@
 package com.ridelink.ride_service.config;
 
+import com.ridelink.ride_service.security.AuthenticatedUser;
 import com.ridelink.ride_service.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,7 +33,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null
+                || !authHeader.startsWith("Bearer ")) {
+
             filterChain.doFilter(request, response);
             return;
         }
@@ -40,23 +43,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
+
             if (jwtService.isTokenValid(token)) {
 
-                String email = jwtService.extractEmail(token);
-                String role = jwtService.extractRole(token);
+                String accountId =
+                        jwtService.extractAccountId(token);
+
+                String email =
+                        jwtService.extractEmail(token);
+
+                String role =
+                        jwtService.extractRole(token);
 
                 if (role != null) {
                     role = role.trim().toUpperCase();
                 }
 
-                if (email != null
+                if (accountId != null
+                        && !accountId.isBlank()
+                        && email != null
                         && role != null
-                        && SecurityContextHolder.getContext()
+                        && SecurityContextHolder
+                                .getContext()
                                 .getAuthentication() == null) {
+
+                    AuthenticatedUser authenticatedUser =
+                            new AuthenticatedUser(
+                                    accountId,
+                                    email,
+                                    role
+                            );
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
-                                    email,
+                                    authenticatedUser,
                                     null,
                                     List.of(
                                             new SimpleGrantedAuthority(
@@ -65,12 +85,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     )
                             );
 
-                    SecurityContextHolder.getContext()
+                    SecurityContextHolder
+                            .getContext()
                             .setAuthentication(authentication);
                 }
             }
 
-        } catch (Exception e) {
+        } catch (Exception exception) {
+
             SecurityContextHolder.clearContext();
         }
 
