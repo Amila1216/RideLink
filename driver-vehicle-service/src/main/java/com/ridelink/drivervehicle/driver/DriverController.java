@@ -1,5 +1,7 @@
 package com.ridelink.drivervehicle.driver;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,12 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -46,6 +49,26 @@ public class DriverController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(driverService.createDriver(request));
+    }
+
+    @Operation(
+            summary = "Find available eligible drivers",
+            description = "Returns drivers with AVAILABLE status, a complete operational profile, a matching service area, and at least one complete vehicle. Set requireLocation=true to also require a valid existing simulated location. Personal contact and license information is not returned."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search completed; drivers is empty when no drivers qualify", content = @Content(
+                    schema = @Schema(implementation = EligibleDriverSearchResponse.class),
+                    examples = @ExampleObject(value = "{\"drivers\":[{\"driverId\":12,\"availability\":\"AVAILABLE\",\"vehicles\":[{\"vehicleId\":34,\"vehicleType\":\"SEDAN\"}]}]}"))),
+            @ApiResponse(responseCode = "400", description = "Missing, blank, or overlong service area", content = @Content(schema = @Schema(implementation = com.ridelink.drivervehicle.common.ApiError.class))),
+            @ApiResponse(responseCode = "401", description = "Unauthorized when enforced by the deployment authentication gateway"),
+            @ApiResponse(responseCode = "403", description = "Forbidden when enforced by the deployment authorization gateway"),
+            @ApiResponse(responseCode = "500", description = "Unexpected service or data error", content = @Content(schema = @Schema(implementation = com.ridelink.drivervehicle.common.ApiError.class)))
+    })
+    @GetMapping("/drivers/eligible")
+    public ResponseEntity<EligibleDriverSearchResponse> findEligibleDrivers(
+            @Valid @org.springframework.web.bind.annotation.ModelAttribute EligibleDriverSearchRequest request) {
+
+        return ResponseEntity.ok(driverService.findEligibleDrivers(request));
     }
 
     /*

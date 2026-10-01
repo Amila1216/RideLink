@@ -1,12 +1,14 @@
 package com.ridelink.drivervehicle.driver;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.ridelink.drivervehicle.common.DuplicateResourceException;
 import com.ridelink.drivervehicle.common.ResourceNotFoundException;
-
-import java.util.List;
+import com.ridelink.drivervehicle.vehicle.Vehicle;
 
 @Service
 public class DriverService {
@@ -57,6 +59,34 @@ public class DriverService {
                 .stream()
                 .map(DriverResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public EligibleDriverSearchResponse findEligibleDrivers(
+            EligibleDriverSearchRequest request) {
+
+        String requestedArea = request.serviceArea().trim();
+
+        List<EligibleDriverResponse> eligibleDrivers = driverRepository
+                .findByDriverAvailability(DriverAvailability.AVAILABLE)
+                .stream()
+                .filter(driver -> hasOperationalProfile(driver)
+                        && StringUtils.hasText(driver.getServiceArea())
+                        && requestedArea.equalsIgnoreCase(driver.getServiceArea().trim())
+                        && (!request.requireLocation() || hasValidSimulatedLocation(driver)))
+                .map(driver -> new EligibleDriverResponse(
+                        driver.getDriverId(),
+                        driver.getDriverAvailability(),
+                        driver.getVehicles().stream()
+                                .filter(this::hasVehicleDetails)
+                                .map(vehicle -> new EligibleVehicleResponse(
+                                        vehicle.getVehicleId(),
+                                        vehicle.getVehicleType()))
+                                .toList()))
+                .filter(driver -> !driver.vehicles().isEmpty())
+                .toList();
+
+        return new EligibleDriverSearchResponse(eligibleDrivers);
     }
 
     @Transactional
@@ -208,6 +238,33 @@ public class DriverService {
                                 "Driver not found with id: " + driverId
                         )
                 );
+    }
+
+    private boolean hasOperationalProfile(Driver driver) {
+        return StringUtils.hasText(driver.getFirstName())
+                && StringUtils.hasText(driver.getLastName())
+                && StringUtils.hasText(driver.getEmail())
+                && StringUtils.hasText(driver.getPhoneNumber())
+                && StringUtils.hasText(driver.getLicenseNumber());
+    }
+
+    private boolean hasValidSimulatedLocation(Driver driver) {
+        Double latitude = driver.getCurrentLatitude();
+        Double longitude = driver.getCurrentLongitude();
+        return latitude != null && longitude != null
+                && latitude >= -90 && latitude <= 90
+                && longitude >= -180 && longitude <= 180;
+    }
+
+    private boolean hasVehicleDetails(Vehicle vehicle) {
+        return vehicle.getVehicleId() != null
+                && StringUtils.hasText(vehicle.getMake())
+                && StringUtils.hasText(vehicle.getModel())
+                && vehicle.getYear() != null && vehicle.getYear() >= 1900
+                && StringUtils.hasText(vehicle.getLicensePlate())
+                && StringUtils.hasText(vehicle.getColor())
+                && vehicle.getVehicleType() != null
+                && StringUtils.hasText(vehicle.getRegistrationNumber());
     }
 
     private void validateUniqueFields(
