@@ -27,9 +27,7 @@ public class JwtService {
     public boolean isTokenValid(String token) {
         try {
             Claims claims = extractClaims(token);
-
             return claims.getExpiration().after(new Date());
-
         } catch (Exception e) {
             return false;
         }
