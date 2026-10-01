@@ -1,14 +1,16 @@
 package com.ridelink.ride_service.controller;
 
+import com.ridelink.ride_service.dto.CreateRideRequest;
+import com.ridelink.ride_service.dto.UpdateRideRequest;
 import com.ridelink.ride_service.model.Ride;
+import com.ridelink.ride_service.security.AuthenticatedUser;
 import com.ridelink.ride_service.service.RideService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/rides")
@@ -21,66 +23,162 @@ public class RideController {
     }
 
     @PostMapping
-    public ResponseEntity<Ride> createRide(@Valid @RequestBody Ride ride) {
-        Ride createdRide = rideService.createRide(ride);
-        return new ResponseEntity<>(createdRide, HttpStatus.CREATED);
+    public ResponseEntity<Ride> createRide(
+            @Valid @RequestBody CreateRideRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        Ride ride = new Ride();
+
+        ride.setPassengerId(authenticatedUser.accountId());
+        ride.setPickupLocation(request.pickupLocation());
+        ride.setDropoffLocation(request.dropoffLocation());
+
+        return ResponseEntity
+                .status(201)
+                .body(rideService.createRide(ride));
     }
 
     @GetMapping
     public ResponseEntity<List<Ride>> getAllRides() {
-        return ResponseEntity.ok(rideService.getAllRides());
+        return ResponseEntity.ok(
+                rideService.getAllRides()
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Ride> getRideById(@PathVariable String id) {
-        return rideService.getRideById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Ride> getRideById(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.getRideByIdForUser(
+                        id,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.email(),
+                        authenticatedUser.role()
+                )
+        );
     }
 
     @GetMapping("/passenger/{passengerId}")
-    public ResponseEntity<List<Ride>> getRidesByPassenger(@PathVariable String passengerId) {
-        return ResponseEntity.ok(rideService.getRidesByPassenger(passengerId));
+    public ResponseEntity<List<Ride>> getRidesByPassenger(
+            @PathVariable String passengerId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.getRidesByPassengerForUser(
+                        passengerId,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.role()
+                )
+        );
     }
 
     @GetMapping("/driver/{driverId}")
-    public ResponseEntity<List<Ride>> getRidesByDriver(@PathVariable String driverId) {
-        return ResponseEntity.ok(rideService.getRidesByDriver(driverId));
-    }
+    public ResponseEntity<List<Ride>> getRidesByDriver(
+            @PathVariable String driverId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
-        String status = payload.get("status");
-        String driverId = payload.get("driverId");
-
-        if (status == null || status.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Status field is required"));
-        }
-
-        try {
-            Ride updatedRide = rideService.updateRideStatus(id, status, driverId);
-            return ResponseEntity.ok(updatedRide);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-        }
+        return ResponseEntity.ok(
+                rideService.getRidesByDriverForUser(
+                        driverId,
+                        authenticatedUser.email(),
+                        authenticatedUser.role()
+                )
+        );
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Ride> updateRide(@PathVariable String id, @Valid @RequestBody Ride ride) {
-        Ride updatedRide = rideService.updateRide(id, ride);
-        if (updatedRide != null) {
-            return ResponseEntity.ok(updatedRide);
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<Ride> updateRide(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateRideRequest request,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        Ride ride = new Ride();
+
+        ride.setPickupLocation(request.pickupLocation());
+        ride.setDropoffLocation(request.dropoffLocation());
+
+        Ride updatedRide = rideService.updateRide(
+                id,
+                ride,
+                authenticatedUser.accountId(),
+                authenticatedUser.role()
+        );
+
+        return ResponseEntity.ok(updatedRide);
+    }
+
+    @PostMapping("/{id}/assign-driver")
+    public ResponseEntity<Ride> assignDriver(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.assignAvailableDriver(
+                        id,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.role()
+                )
+        );
+    }
+
+    @PostMapping("/{id}/accept")
+    public ResponseEntity<Ride> acceptRide(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.acceptRide(
+                        id,
+                        authenticatedUser.email()
+                )
+        );
+    }
+
+    @PostMapping("/{id}/start")
+    public ResponseEntity<Ride> startRide(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.startRide(
+                        id,
+                        authenticatedUser.email()
+                )
+        );
+    }
+
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<Ride> completeRide(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.completeRide(
+                        id,
+                        authenticatedUser.email()
+                )
+        );
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<Ride> cancelRide(
+            @PathVariable String id,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser) {
+
+        return ResponseEntity.ok(
+                rideService.cancelRide(
+                        id,
+                        authenticatedUser.accountId(),
+                        authenticatedUser.email(),
+                        authenticatedUser.role()
+                )
+        );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRide(@PathVariable String id) {
-        if (rideService.getRideById(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         rideService.deleteRide(id);
         return ResponseEntity.noContent().build();
     }
