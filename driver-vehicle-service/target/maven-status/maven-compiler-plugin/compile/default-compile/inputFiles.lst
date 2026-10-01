@@ -13,6 +13,10 @@
 /Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/DriverRequest.java
 /Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/DriverResponse.java
 /Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/DriverService.java
+/Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/EligibleDriverResponse.java
+/Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/EligibleDriverSearchRequest.java
+/Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/EligibleDriverSearchResponse.java
+/Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/EligibleVehicleResponse.java
 /Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/ServiceAreaRequest.java
 /Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/ServiceAreaResponse.java
 /Users/devinwanigaratne/Documents/GitHub/RideLink/driver-vehicle-service/src/main/java/com/ridelink/drivervehicle/driver/SimulatedLocationRequest.java

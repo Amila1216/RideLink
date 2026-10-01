@@ -291,6 +291,71 @@ class DriverVehicleControllerTest {
     }
 
     @Test
+    void eligibleDrivers_shouldReturnOnlyAvailableDriversInRequestedArea() throws Exception {
+        Long matchingDriver = createDriver("Olivia", "Green", "olivia.green@example.com", "DL-ELIG-1");
+        Long unavailableDriver = createDriver("Peter", "Gray", "peter.gray@example.com", "DL-ELIG-2");
+        Long differentAreaDriver = createDriver("Quinn", "White", "quinn.white@example.com", "DL-ELIG-3");
+        addVehicle(matchingDriver, "ELG-001", "ELG-REG-1");
+        addVehicle(unavailableDriver, "ELG-002", "ELG-REG-2");
+        addVehicle(differentAreaDriver, "ELG-003", "ELG-REG-3");
+        setServiceArea(matchingDriver, "Colombo");
+        setServiceArea(unavailableDriver, "Colombo");
+        setServiceArea(differentAreaDriver, "Kandy");
+        setLocation(matchingDriver);
+        setLocation(unavailableDriver);
+        setLocation(differentAreaDriver);
+        mockMvc.perform(put("/api/v1/drivers/{driverId}/availability", unavailableDriver)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("status", "UNAVAILABLE"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/drivers/eligible")
+                        .param("serviceArea", "colombo")
+                        .param("requireLocation", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.drivers.length()").value(1))
+                .andExpect(jsonPath("$.drivers[0].driverId").value(matchingDriver))
+                .andExpect(jsonPath("$.drivers[0].availability").value("AVAILABLE"))
+                .andExpect(jsonPath("$.drivers[0].vehicles[0].vehicleId").isNumber())
+                .andExpect(jsonPath("$.drivers[0].email").doesNotExist());
+    }
+
+    @Test
+    void eligibleDrivers_shouldReturnEmptyListWhenNoDriversMatch() throws Exception {
+        mockMvc.perform(get("/api/v1/drivers/eligible").param("serviceArea", "Colombo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.drivers").isArray())
+                .andExpect(jsonPath("$.drivers").isEmpty());
+    }
+
+    @Test
+    void eligibleDrivers_shouldRejectMissingOrInvalidServiceArea() throws Exception {
+        mockMvc.perform(get("/api/v1/drivers/eligible"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        mockMvc.perform(get("/api/v1/drivers/eligible").param("serviceArea", "   "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+
+        mockMvc.perform(get("/api/v1/drivers/eligible").param("serviceArea", "x".repeat(101)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void eligibleDrivers_shouldExcludeDriverWithoutLocationWhenRequired() throws Exception {
+        Long driverId = createDriver("Rae", "Blue", "rae.blue@example.com", "DL-ELIG-4");
+        addVehicle(driverId, "ELG-004", "ELG-REG-4");
+        setServiceArea(driverId, "Colombo");
+
+        mockMvc.perform(get("/api/v1/drivers/eligible")
+                        .param("serviceArea", "Colombo")
+                        .param("requireLocation", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.drivers").isEmpty());
+    }
+
+    @Test
     void updateAvailability_shouldReturnBadRequest_whenStatusIsUnsupportedOrMissing() throws Exception {
         Long driverId = createDriver("Noah", "Silva", "noah.silva@example.com", "DL-9014");
 
@@ -433,4 +498,34 @@ class DriverVehicleControllerTest {
 
         return objectMapper.readTree(response).get("driverId").asLong();
     }
+
+        private void addVehicle(Long driverId, String licensePlate, String registrationNumber) throws Exception {
+                Map<String, Object> request = Map.of(
+                                "make", "Toyota",
+                                "model", "Corolla",
+                                "year", 2022,
+                                "licensePlate", licensePlate,
+                                "color", "Silver",
+                                "vehicleType", "SEDAN",
+                                "registrationNumber", registrationNumber
+                );
+                mockMvc.perform(post("/api/v1/drivers/{driverId}/vehicles", driverId)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(request)))
+                                .andExpect(status().isCreated());
+        }
+
+        private void setServiceArea(Long driverId, String serviceArea) throws Exception {
+                mockMvc.perform(put("/api/v1/drivers/{driverId}/service-area", driverId)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(Map.of("serviceArea", serviceArea))))
+                                .andExpect(status().isOk());
+        }
+
+        private void setLocation(Long driverId) throws Exception {
+                mockMvc.perform(put("/api/v1/drivers/{driverId}/location", driverId)
+                                                .contentType(MediaType.APPLICATION_JSON)
+                                                .content(objectMapper.writeValueAsString(Map.of("latitude", 6.9271, "longitude", 79.8612))))
+                                .andExpect(status().isOk());
+        }
 }
