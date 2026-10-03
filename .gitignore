@@ -1,0 +1,18 @@
+# Java / Maven build output
+**/target/
+**/build/
+**/out/
+
+# Local database files
+**/data/*.db
+**/data/*.mv.db
+**/data/*.trace.db
+**/data/*.lock.db
+
+# IDE / OS noise
+**/.idea/
+**/.vscode/
+**/.classpath
+**/.project
+**/.settings/
+**/.DS_Store
