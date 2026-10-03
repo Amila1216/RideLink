@@ -1,8 +1,10 @@
 com/ridelink/drivervehicle/driver/ServiceAreaResponse.class
 com/ridelink/drivervehicle/driver/EligibleDriverSearchRequest.class
 com/ridelink/drivervehicle/driver/DriverRepository.class
+com/ridelink/drivervehicle/driver/DriverAvailabilityRequest.class
 com/ridelink/drivervehicle/common/DuplicateResourceException.class
 com/ridelink/drivervehicle/vehicle/VehicleType.class
+com/ridelink/drivervehicle/common/RootController.class
 com/ridelink/drivervehicle/driver/Driver.class
 com/ridelink/drivervehicle/driver/SimulatedLocationRequest.class
 com/ridelink/drivervehicle/driver/ServiceAreaRequest.class
@@ -15,6 +17,7 @@ com/ridelink/drivervehicle/vehicle/VehicleController.class
 com/ridelink/drivervehicle/RideLinkDriverVehicleServiceApplication.class
 com/ridelink/drivervehicle/vehicle/VehicleRepository.class
 com/ridelink/drivervehicle/driver/EligibleVehicleResponse.class
+com/ridelink/drivervehicle/driver/DriverAvailabilityResponse.class
 com/ridelink/drivervehicle/driver/DriverRequest.class
 com/ridelink/drivervehicle/driver/DriverController.class
 com/ridelink/drivervehicle/vehicle/Vehicle.class
