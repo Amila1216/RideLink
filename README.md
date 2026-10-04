@@ -46,7 +46,7 @@ The Driver & Vehicle service is the implemented Spring Boot application in this 
 - Add, update, and retrieve vehicles for a driver
 - Search eligible drivers for a specified service area
 - Expose Swagger/OpenAPI documentation
-- Store data in an H2 database for local development
+- Store driver and vehicle data in MongoDB
 
 ### Core endpoints
 
@@ -151,9 +151,8 @@ Detailed driver eligibility service contract documentation is included in:
 - Java 21
 - Spring Boot 3.3.3
 - Spring Web
-- Spring Data JPA
-- Hibernate
-- H2 Database
+- Spring Data MongoDB
+- MongoDB Atlas
 - Spring Validation
 - Springdoc OpenAPI
 - Maven
@@ -168,9 +167,29 @@ Important configuration details:
 
 - Application name: driver-vehicle-service
 - Server port: 8083
-- H2 file database: ./data/ridelink_driver_vehicle
+- MongoDB database: ridelink
+- MongoDB connection URI: loaded from `driver-vehicle-service/.env` in the local profile
+- JWT admin credentials and signing key: loaded from the same ignored local `.env`
 - Swagger path: /swagger-ui.html
 - OpenAPI docs path: /v3/api-docs
+
+The local profile imports `driver-vehicle-service/.env`, which is excluded from Git. Set `MONGODB_URI` there or provide it through the process environment. Never commit the URI. For example:
+
+```bash
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-host>/?appName=Cluster0
+```
+
+The service selects the `ridelink` database. The local `.env` also contains a randomly generated administrator password and Base64 JWT signing key. Keep the file private and do not commit it. The signing key must remain stable across restarts so issued tokens remain verifiable until expiry.
+
+`POST /api/v1/auth/token` accepts the configured administrator username and password as JSON and returns a 15-minute Bearer token. Include that token in `Authorization: Bearer <token>` for the other API routes. All driver and vehicle routes require an administrator token; there is no public account registration.
+
+```bash
+curl -X POST http://localhost:8083/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"<AUTH_ADMIN_PASSWORD from .env>"}'
+```
+
+For deployed environments, set `MONGODB_URI`, `AUTH_ADMIN_USERNAME`, `AUTH_ADMIN_PASSWORD`, and `JWT_SECRET` through the platform's secret manager rather than copying the local `.env`. Rotate the MongoDB password shared in chat in Atlas and update the local `.env`.
 
 ## Run the project
 

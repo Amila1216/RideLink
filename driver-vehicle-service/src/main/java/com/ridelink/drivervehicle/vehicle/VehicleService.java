@@ -1,24 +1,28 @@
 package com.ridelink.drivervehicle.vehicle;
 
 import com.ridelink.drivervehicle.common.DuplicateResourceException;
+import com.ridelink.drivervehicle.common.MongoSequenceGenerator;
 import com.ridelink.drivervehicle.common.ResourceNotFoundException;
 import com.ridelink.drivervehicle.driver.Driver;
 import com.ridelink.drivervehicle.driver.DriverRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final DriverRepository driverRepository;
+    private final MongoSequenceGenerator sequenceGenerator;
 
-    public VehicleService(VehicleRepository vehicleRepository, DriverRepository driverRepository) {
+    public VehicleService(
+            VehicleRepository vehicleRepository,
+            DriverRepository driverRepository,
+            MongoSequenceGenerator sequenceGenerator) {
         this.vehicleRepository = vehicleRepository;
         this.driverRepository = driverRepository;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
-    @Transactional
     public VehicleResponse createVehicle(Long driverId, VehicleRequest request) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
@@ -33,13 +37,13 @@ public class VehicleService {
                 request.color(),
                 request.vehicleType(),
                 request.registrationNumber(),
-                driver
+                driver.getDriverId()
         );
+        vehicle.setVehicleId(sequenceGenerator.nextSequence("vehicle"));
 
         return VehicleResponse.from(vehicleRepository.save(vehicle));
     }
 
-    @Transactional(readOnly = true)
     public VehicleResponse getVehicle(Long driverId, Long vehicleId) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
@@ -47,14 +51,13 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + vehicleId));
 
-        if (!vehicle.getDriver().getDriverId().equals(driver.getDriverId())) {
+        if (!vehicle.getDriverId().equals(driver.getDriverId())) {
             throw new ResourceNotFoundException("Vehicle not found for driver id: " + driverId);
         }
 
         return VehicleResponse.from(vehicle);
     }
 
-    @Transactional
     public VehicleResponse updateVehicle(Long driverId, Long vehicleId, VehicleRequest request) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
@@ -62,7 +65,7 @@ public class VehicleService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found with id: " + vehicleId));
 
-        if (!vehicle.getDriver().getDriverId().equals(driver.getDriverId())) {
+        if (!vehicle.getDriverId().equals(driver.getDriverId())) {
             throw new ResourceNotFoundException("Vehicle not found for driver id: " + driverId);
         }
 

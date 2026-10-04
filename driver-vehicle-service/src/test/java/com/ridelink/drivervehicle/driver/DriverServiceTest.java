@@ -13,7 +13,9 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ridelink.drivervehicle.common.ResourceNotFoundException;
+import com.ridelink.drivervehicle.common.MongoSequenceGenerator;
 import com.ridelink.drivervehicle.vehicle.Vehicle;
+import com.ridelink.drivervehicle.vehicle.VehicleRepository;
 import com.ridelink.drivervehicle.vehicle.VehicleType;
 
 @ExtendWith(MockitoExtension.class)
@@ -22,16 +24,22 @@ class DriverServiceTest {
     @Mock
     private DriverRepository driverRepository;
 
+    @Mock
+    private VehicleRepository vehicleRepository;
+
+    @Mock
+    private MongoSequenceGenerator sequenceGenerator;
+
         @Test
         void findEligibleDrivers_shouldReturnAvailableMatchingDriverAndMinimalVehicleInfo() {
         Driver eligible = eligibleDriver(1L, "Colombo");
-        Driver unavailable = eligibleDriver(2L, "Colombo");
-        unavailable.setDriverAvailability(DriverAvailability.UNAVAILABLE);
         Driver otherArea = eligibleDriver(3L, "Kandy");
         when(driverRepository.findByDriverAvailability(DriverAvailability.AVAILABLE))
             .thenReturn(List.of(eligible, otherArea));
+        when(vehicleRepository.findByDriverIdIn(List.of(1L, 3L)))
+            .thenReturn(List.of(vehicle(1L)));
 
-        EligibleDriverSearchResponse response = new DriverService(driverRepository)
+        EligibleDriverSearchResponse response = service()
             .findEligibleDrivers(new EligibleDriverSearchRequest(" colombo ", false));
 
         assertEquals(1, response.drivers().size());
@@ -48,11 +56,14 @@ class DriverServiceTest {
         Driver missingVehicle = driver(2L);
         missingVehicle.setServiceArea("Colombo");
         Driver incompleteVehicle = eligibleDriver(3L, "Colombo");
-        incompleteVehicle.getVehicles().get(0).setMake("");
         when(driverRepository.findByDriverAvailability(DriverAvailability.AVAILABLE))
             .thenReturn(List.of(missingProfile, missingVehicle, incompleteVehicle));
+        Vehicle incomplete = vehicle(3L);
+        incomplete.setMake("");
+        when(vehicleRepository.findByDriverIdIn(List.of(1L, 2L, 3L)))
+            .thenReturn(List.of(vehicle(1L), incomplete));
 
-        EligibleDriverSearchResponse response = new DriverService(driverRepository)
+        EligibleDriverSearchResponse response = service()
             .findEligibleDrivers(new EligibleDriverSearchRequest("Colombo", false));
 
         assertEquals(List.of(), response.drivers());
@@ -63,7 +74,9 @@ class DriverServiceTest {
         Driver driver = eligibleDriver(1L, "Colombo");
         when(driverRepository.findByDriverAvailability(DriverAvailability.AVAILABLE))
             .thenReturn(List.of(driver));
-        DriverService service = new DriverService(driverRepository);
+        when(vehicleRepository.findByDriverIdIn(List.of(1L)))
+            .thenReturn(List.of(vehicle(1L)));
+        DriverService service = service();
 
         assertEquals(1, service.findEligibleDrivers(
             new EligibleDriverSearchRequest("Colombo", false)).drivers().size());
@@ -81,7 +94,7 @@ class DriverServiceTest {
         when(driverRepository.findByDriverAvailability(DriverAvailability.AVAILABLE))
             .thenReturn(List.of());
 
-        EligibleDriverSearchResponse response = new DriverService(driverRepository)
+        EligibleDriverSearchResponse response = service()
             .findEligibleDrivers(new EligibleDriverSearchRequest("Colombo", false));
 
         assertEquals(List.of(), response.drivers());
@@ -93,7 +106,7 @@ class DriverServiceTest {
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
         when(driverRepository.save(driver)).thenReturn(driver);
 
-        ServiceAreaResponse response = new DriverService(driverRepository)
+        ServiceAreaResponse response = service()
                 .updateServiceArea(1L, new ServiceAreaRequest(" Colombo ", "City limits"));
 
         assertEquals("Colombo", response.serviceArea());
@@ -107,7 +120,7 @@ class DriverServiceTest {
         driver.setServiceArea("Kandy");
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
 
-        ServiceAreaResponse response = new DriverService(driverRepository).getServiceArea(1L);
+        ServiceAreaResponse response = service().getServiceArea(1L);
 
         assertEquals("Kandy", response.serviceArea());
     }
@@ -118,7 +131,7 @@ class DriverServiceTest {
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
         when(driverRepository.save(driver)).thenReturn(driver);
 
-        SimulatedLocationResponse response = new DriverService(driverRepository)
+        SimulatedLocationResponse response = service()
                 .updateSimulatedLocation(1L, new SimulatedLocationRequest(6.9271, 79.8612));
 
         assertEquals(6.9271, response.latitude());
@@ -133,7 +146,7 @@ class DriverServiceTest {
         driver.setCurrentLongitude(79.8612);
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
 
-        SimulatedLocationResponse response = new DriverService(driverRepository).getSimulatedLocation(1L);
+        SimulatedLocationResponse response = service().getSimulatedLocation(1L);
 
         assertEquals(6.9271, response.latitude());
         assertEquals(79.8612, response.longitude());
@@ -146,7 +159,7 @@ class DriverServiceTest {
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
         when(driverRepository.save(driver)).thenReturn(driver);
 
-        DriverAvailabilityResponse response = new DriverService(driverRepository)
+        DriverAvailabilityResponse response = service()
                 .updateAvailability(1L, new DriverAvailabilityRequest("AVAILABLE"));
 
         assertEquals(DriverAvailability.AVAILABLE, response.status());
@@ -159,7 +172,7 @@ class DriverServiceTest {
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
         when(driverRepository.save(driver)).thenReturn(driver);
 
-        DriverAvailabilityResponse response = new DriverService(driverRepository)
+        DriverAvailabilityResponse response = service()
                 .updateAvailability(1L, new DriverAvailabilityRequest("UNAVAILABLE"));
 
         assertEquals(DriverAvailability.UNAVAILABLE, response.status());
@@ -172,7 +185,7 @@ class DriverServiceTest {
         driver.setDriverAvailability(DriverAvailability.UNAVAILABLE);
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
 
-        DriverAvailabilityResponse response = new DriverService(driverRepository).getAvailability(1L);
+        DriverAvailabilityResponse response = service().getAvailability(1L);
 
         assertEquals(DriverAvailability.UNAVAILABLE, response.status());
     }
@@ -183,7 +196,7 @@ class DriverServiceTest {
         when(driverRepository.findById(1L)).thenReturn(Optional.of(driver));
 
         assertThrows(IllegalArgumentException.class,
-                () -> new DriverService(driverRepository)
+                () -> service()
                         .updateAvailability(1L, new DriverAvailabilityRequest("BUSY")));
     }
 
@@ -192,7 +205,7 @@ class DriverServiceTest {
         when(driverRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
-                () -> new DriverService(driverRepository).getAvailability(99L));
+                () -> service().getAvailability(99L));
     }
 
     @Test
@@ -200,7 +213,7 @@ class DriverServiceTest {
         when(driverRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
-                () -> new DriverService(driverRepository).getServiceArea(99L));
+                () -> service().getServiceArea(99L));
     }
 
     private Driver driver(Long id) {
@@ -213,10 +226,17 @@ class DriverServiceTest {
     private Driver eligibleDriver(Long id, String serviceArea) {
         Driver driver = driver(id);
         driver.setServiceArea(serviceArea);
-        Vehicle vehicle = new Vehicle("Toyota", "Corolla", 2022, "ABC-" + id,
-                "Silver", VehicleType.SEDAN, "REG-" + id, driver);
-        vehicle.setVehicleId(id + 20);
-        driver.setVehicles(List.of(vehicle));
         return driver;
+    }
+
+    private Vehicle vehicle(Long driverId) {
+        Vehicle vehicle = new Vehicle("Toyota", "Corolla", 2022, "ABC-" + driverId,
+                "Silver", VehicleType.SEDAN, "REG-" + driverId, driverId);
+        vehicle.setVehicleId(driverId + 20);
+        return vehicle;
+    }
+
+    private DriverService service() {
+        return new DriverService(driverRepository, vehicleRepository, sequenceGenerator);
     }
 }
