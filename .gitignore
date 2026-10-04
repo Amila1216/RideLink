@@ -9,6 +9,10 @@
 **/data/*.trace.db
 **/data/*.lock.db
 
+# Local secrets
+.env
+.env.*
+
 # IDE / OS noise
 **/.idea/
 **/.vscode/

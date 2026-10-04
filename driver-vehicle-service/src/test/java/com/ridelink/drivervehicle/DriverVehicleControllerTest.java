@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@WithMockUser(authorities = "SCOPE_ADMIN")
 class DriverVehicleControllerTest {
 
     @Autowired
@@ -27,6 +30,50 @@ class DriverVehicleControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Test
+    @WithAnonymousUser
+    void protectedApi_shouldRejectUnauthenticatedRequest() throws Exception {
+        mockMvc.perform(get("/api/v1/drivers/available"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "SCOPE_USER")
+    void protectedApi_shouldRejectNonAdminUser() throws Exception {
+        mockMvc.perform(get("/api/v1/drivers/available"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void login_shouldIssueJwtThatCanAccessAdminApi() throws Exception {
+        String response = mockMvc.perform(post("/api/v1/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", "test-admin",
+                                "password", "test-admin-password"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.expiresIn").value(900))
+                .andReturn().getResponse().getContentAsString();
+
+        String token = objectMapper.readTree(response).get("accessToken").asText();
+        mockMvc.perform(get("/api/v1/drivers/available")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithAnonymousUser
+    void login_shouldRejectInvalidCredentials() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "username", "test-admin",
+                                "password", "wrong-password"))))
+                .andExpect(status().isUnauthorized());
+    }
 
     @Test
     void rootEndpoint_shouldReturnServiceInfo() throws Exception {

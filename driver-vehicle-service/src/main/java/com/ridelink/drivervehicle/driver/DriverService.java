@@ -1,25 +1,34 @@
 package com.ridelink.drivervehicle.driver;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import com.ridelink.drivervehicle.common.DuplicateResourceException;
+import com.ridelink.drivervehicle.common.MongoSequenceGenerator;
 import com.ridelink.drivervehicle.common.ResourceNotFoundException;
 import com.ridelink.drivervehicle.vehicle.Vehicle;
+import com.ridelink.drivervehicle.vehicle.VehicleRepository;
 
 @Service
 public class DriverService {
 
     private final DriverRepository driverRepository;
+    private final VehicleRepository vehicleRepository;
+    private final MongoSequenceGenerator sequenceGenerator;
 
-    public DriverService(DriverRepository driverRepository) {
+    public DriverService(
+            DriverRepository driverRepository,
+            VehicleRepository vehicleRepository,
+            MongoSequenceGenerator sequenceGenerator) {
         this.driverRepository = driverRepository;
+        this.vehicleRepository = vehicleRepository;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
-    @Transactional
     public DriverResponse createDriver(DriverRequest request) {
         validateUniqueFields(request.email(), request.licenseNumber());
 
@@ -33,11 +42,11 @@ public class DriverService {
                         ? request.driverAvailability()
                         : DriverAvailability.AVAILABLE
         );
+        driver.setDriverId(sequenceGenerator.nextSequence("driver"));
 
         return DriverResponse.from(driverRepository.save(driver));
     }
 
-    @Transactional(readOnly = true)
     public DriverResponse getDriver(Long driverId) {
         Driver driver = driverRepository.findById(driverId)
                 .orElseThrow(() ->
@@ -51,7 +60,6 @@ public class DriverService {
 
     // Get all drivers who are currently AVAILABLE.
     // Ride Service will use this for driver assignment.
-    @Transactional(readOnly = true)
     public List<DriverResponse> getAvailableDrivers() {
 
         return driverRepository
@@ -61,14 +69,26 @@ public class DriverService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     public EligibleDriverSearchResponse findEligibleDrivers(
             EligibleDriverSearchRequest request) {
 
         String requestedArea = request.serviceArea().trim();
 
-        List<EligibleDriverResponse> eligibleDrivers = driverRepository
-                .findByDriverAvailability(DriverAvailability.AVAILABLE)
+        List<Driver> availableDrivers = driverRepository
+                .findByDriverAvailability(DriverAvailability.AVAILABLE);
+        if (availableDrivers.isEmpty()) {
+            return new EligibleDriverSearchResponse(List.of());
+        }
+
+        List<Long> driverIds = availableDrivers.stream()
+                .map(Driver::getDriverId)
+                .toList();
+        Map<Long, List<Vehicle>> vehiclesByDriver = vehicleRepository
+                .findByDriverIdIn(driverIds)
+                .stream()
+                .collect(Collectors.groupingBy(Vehicle::getDriverId));
+
+        List<EligibleDriverResponse> eligibleDrivers = availableDrivers
                 .stream()
                 .filter(driver -> hasOperationalProfile(driver)
                         && StringUtils.hasText(driver.getServiceArea())
@@ -77,7 +97,7 @@ public class DriverService {
                 .map(driver -> new EligibleDriverResponse(
                         driver.getDriverId(),
                         driver.getDriverAvailability(),
-                        driver.getVehicles().stream()
+                        vehiclesByDriver.getOrDefault(driver.getDriverId(), List.of()).stream()
                                 .filter(this::hasVehicleDetails)
                                 .map(vehicle -> new EligibleVehicleResponse(
                                         vehicle.getVehicleId(),
@@ -89,7 +109,6 @@ public class DriverService {
         return new EligibleDriverSearchResponse(eligibleDrivers);
     }
 
-    @Transactional
     public DriverAvailabilityResponse updateAvailability(
             Long driverId,
             DriverAvailabilityRequest request) {
@@ -113,14 +132,12 @@ public class DriverService {
         );
     }
 
-    @Transactional(readOnly = true)
     public DriverAvailabilityResponse getAvailability(Long driverId) {
         return DriverAvailabilityResponse.from(
                 findDriver(driverId)
         );
     }
 
-    @Transactional
     public DriverResponse updateDriver(
             Long driverId,
             DriverRequest request) {
@@ -174,7 +191,6 @@ public class DriverService {
         );
     }
 
-    @Transactional
     public ServiceAreaResponse updateServiceArea(
             Long driverId,
             ServiceAreaRequest request) {
@@ -194,14 +210,12 @@ public class DriverService {
         );
     }
 
-    @Transactional(readOnly = true)
     public ServiceAreaResponse getServiceArea(Long driverId) {
         return ServiceAreaResponse.from(
                 findDriver(driverId)
         );
     }
 
-    @Transactional
     public SimulatedLocationResponse updateSimulatedLocation(
             Long driverId,
             SimulatedLocationRequest request) {
@@ -221,7 +235,6 @@ public class DriverService {
         );
     }
 
-    @Transactional(readOnly = true)
     public SimulatedLocationResponse getSimulatedLocation(
             Long driverId) {
 

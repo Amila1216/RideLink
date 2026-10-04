@@ -14,7 +14,7 @@ public record VehicleResponse(
     public static VehicleResponse from(Vehicle vehicle) {
         return new VehicleResponse(
                 vehicle.getVehicleId(),
-                vehicle.getDriver().getDriverId(),
+                vehicle.getDriverId(),
                 vehicle.getMake(),
                 vehicle.getModel(),
                 vehicle.getYear(),

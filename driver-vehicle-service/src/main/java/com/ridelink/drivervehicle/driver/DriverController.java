@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
@@ -28,6 +29,7 @@ import jakarta.validation.Valid;
         name = "Driver & Vehicle Service",
         description = "Driver, vehicle, availability, service-area, and simulated-location operations"
 )
+@SecurityRequirement(name = "bearerAuth")
 public class DriverController {
 
     private final DriverService driverService;
