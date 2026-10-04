@@ -1,0 +1,663 @@
+{
+  "info": {
+    "_postman_id": "c7a8b9f0-1234-4567-89ab-cdef01234567",
+    "name": "Ride Service - Microservice Test Suite",
+    "description": "Comprehensive Postman Test Collection for 'ride-service' microservice (Spring Boot 3.2.5, MongoDB, Java 17). Covers CRUD endpoints, full state machine lifecycle, positive flow, and negative assertions.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:9090",
+      "type": "string"
+    },
+    {
+      "key": "rideId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tempRideId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Create Ride (Positive - HTTP 201)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response contains valid ride details with status REQUESTED', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.id).to.not.be.empty;",
+              "    pm.expect(jsonData.passengerId).to.eql('pass-101');",
+              "    pm.expect(jsonData.pickupLocation).to.eql('123 Main St');",
+              "    pm.expect(jsonData.dropoffLocation).to.eql('456 Market St');",
+              "    pm.expect(jsonData.status).to.eql('REQUESTED');",
+              "    ",
+              "    // Store rideId for dynamic chained requests",
+              "    pm.collectionVariables.set('rideId', jsonData.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"passengerId\": \"pass-101\",\n  \"pickupLocation\": \"123 Main St\",\n  \"dropoffLocation\": \"456 Market St\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides"
+          ]
+        },
+        "description": "Positive Test: Create a new ride request. Asserts HTTP 201 status and initial status set to REQUESTED."
+      }
+    },
+    {
+      "name": "02 - Get Ride by ID (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Ride ID matches created ride', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.id).to.eql(pm.collectionVariables.get('rideId'));",
+              "    pm.expect(jsonData.passengerId).to.eql('pass-101');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{rideId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{rideId}}"
+          ]
+        },
+        "description": "Positive Test: Fetch the newly created ride by ID."
+      }
+    },
+    {
+      "name": "03 - Update Status to ASSIGNED with driverId (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Status is ASSIGNED and driverId is correctly saved', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('ASSIGNED');",
+              "    pm.expect(jsonData.driverId).to.eql('drv-505');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"ASSIGNED\",\n  \"driverId\": \"drv-505\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{rideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{rideId}}",
+            "status"
+          ]
+        },
+        "description": "Positive Test: Update ride status from REQUESTED to ASSIGNED with a driverId."
+      }
+    },
+    {
+      "name": "04 - Update Status to ACCEPTED (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Status is ACCEPTED', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('ACCEPTED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"ACCEPTED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{rideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{rideId}}",
+            "status"
+          ]
+        },
+        "description": "Valid State Transition: ASSIGNED -> ACCEPTED"
+      }
+    },
+    {
+      "name": "05 - Update Status to IN_PROGRESS (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Status is IN_PROGRESS', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('IN_PROGRESS');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{rideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{rideId}}",
+            "status"
+          ]
+        },
+        "description": "Valid State Transition: ACCEPTED -> IN_PROGRESS"
+      }
+    },
+    {
+      "name": "06 - Update Status to COMPLETED (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Status is COMPLETED', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('COMPLETED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{rideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{rideId}}",
+            "status"
+          ]
+        },
+        "description": "Valid State Transition: IN_PROGRESS -> COMPLETED"
+      }
+    },
+    {
+      "name": "07 - Create Ride Blank Fields (Negative - HTTP 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"passengerId\": \"\",\n  \"pickupLocation\": \"\",\n  \"dropoffLocation\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides"
+          ]
+        },
+        "description": "Negative Test: Attempting to create a ride with blank fields must return HTTP 400 Bad Request."
+      }
+    },
+    {
+      "name": "08a - Setup Secondary Ride for Transition Test",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201 Created', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "var jsonData = pm.response.json();",
+              "pm.collectionVariables.set('tempRideId', jsonData.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"passengerId\": \"pass-102\",\n  \"pickupLocation\": \"789 Broadway\",\n  \"dropoffLocation\": \"101 5th Ave\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides"
+          ]
+        },
+        "description": "Setup helper request: Creates a fresh ride in REQUESTED state for invalid transition test."
+      }
+    },
+    {
+      "name": "08b - Invalid State Transition REQUESTED -> COMPLETED (Negative - HTTP 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Response contains state machine error message', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('Invalid status transition');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{tempRideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{tempRideId}}",
+            "status"
+          ]
+        },
+        "description": "Negative Test: Disallowed state transition from REQUESTED directly to COMPLETED returns HTTP 400."
+      }
+    },
+    {
+      "name": "09 - Attempt to Cancel COMPLETED Ride (Negative - HTTP 400)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 400 Bad Request', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test('Response contains illegal state transition error message', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('Invalid status transition');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"CANCELLED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{rideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{rideId}}",
+            "status"
+          ]
+        },
+        "description": "Negative Test: Attempting to cancel a ride that is already COMPLETED returns HTTP 400."
+      }
+    },
+    {
+      "name": "10 - Valid Cancellation Before Completion (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Status is CANCELLED', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('CANCELLED');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"CANCELLED\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/{{tempRideId}}/status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "{{tempRideId}}",
+            "status"
+          ]
+        },
+        "description": "Positive Test: Cancellation is allowed anytime BEFORE COMPLETED (REQUESTED -> CANCELLED)."
+      }
+    },
+    {
+      "name": "11 - Get All Rides (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Returns a non-empty array of rides', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/rides",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides"
+          ]
+        }
+      }
+    },
+    {
+      "name": "12 - Get Rides by Passenger (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Returns rides for passenger pass-101', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/passenger/pass-101",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "passenger",
+            "pass-101"
+          ]
+        }
+      }
+    },
+    {
+      "name": "13 - Get Rides by Driver (Positive - HTTP 200)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200 OK', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Returns rides for driver drv-505', function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/driver/drv-505",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "driver",
+            "drv-505"
+          ]
+        }
+      }
+    },
+    {
+      "name": "14 - Get Non-Existent Ride (Negative - HTTP 404)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 404 Not Found', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/rides/non-existent-id-99999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "rides",
+            "non-existent-id-99999"
+          ]
+        }
+      }
+    }
+  ]
+}
